@@ -7,8 +7,8 @@ class CompleterGroup<T, R> {
     _registeredCompleters[key] = Completer<R>();
   }
 
-  void complete(T key) {
-    _registeredCompleters[key]?.complete();
+  void complete(T key, [R? value]) {
+    _registeredCompleters[key]?.complete(value);
   }
 
   Future<void> waitForSingle(T key) {
