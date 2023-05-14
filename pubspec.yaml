@@ -36,6 +36,11 @@ dependencies:
       url: https://github.com/HrX03/yatl
       path: yatl_gen
 
+  zenit_ui:
+    git:
+      url: https://github.com/dahliaOS/zenit_ui.git
+      ref: Version-0.0.11
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
