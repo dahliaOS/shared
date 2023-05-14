@@ -47,7 +47,7 @@ typedef ServiceBuilder<T extends Service<T>> = FutureOr<T> Function();
 
 class ServiceManager with LoggerProvider {
   final Map<Type, _ServiceBuilderWithFallback> _awaitingForStartup = {};
-  final CompleterGroup<Type> _completers = CompleterGroup();
+  final CompleterGroup<Type, void> _completers = CompleterGroup();
   final Map<Type, Service<dynamic>> _registeredServices = {};
   final List<Type> _criticalServices = [];
   static final ServiceManager _instance = ServiceManager._();
@@ -103,7 +103,7 @@ class ServiceManager with LoggerProvider {
       _startService(key, value);
     }
 
-    return _completers.waitForCompletion(_criticalServices);
+    await _completers.waitForCompletion(_criticalServices);
   }
 
   Future<void> _startService(
