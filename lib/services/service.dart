@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dahlia_shared/utils/completer_group.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dahlia_shared/utils/log.dart';
 
@@ -46,16 +47,23 @@ typedef ServiceBuilder<T extends Service<T>> = FutureOr<T> Function();
 
 class ServiceManager with LoggerProvider {
   final Map<Type, _ServiceBuilderWithFallback> _awaitingForStartup = {};
-  static final ServiceManager _instance = ServiceManager._();
+  final CompleterGroup<Type> _completers = CompleterGroup();
   final Map<Type, Service<dynamic>> _registeredServices = {};
+  final List<Type> _criticalServices = [];
+  static final ServiceManager _instance = ServiceManager._();
 
   ServiceManager._();
 
   static void registerService<T extends Service<T>>(
     ServiceBuilder<T> builder, {
     T? fallback,
+    bool critical = false,
   }) =>
-      _instance._registerService<T>(builder, fallback);
+      _instance._registerService<T>(
+        builder,
+        fallback: fallback,
+        critical: critical,
+      );
 
   static Future<void> startServices() => _instance._startServices();
 
@@ -70,37 +78,47 @@ class ServiceManager with LoggerProvider {
   static T? getService<T extends Service<T>>() => _instance._getService<T>();
 
   void _registerService<T extends Service<T>>(
-    ServiceBuilder<T> builder, [
+    ServiceBuilder<T> builder, {
     T? fallback,
-  ]) {
-    _awaitingForStartup[T] = _ServiceBuilderWithFallback<T>(builder, fallback);
+    bool critical = false,
+  }) {
+    _awaitingForStartup[T] = (builder, fallback);
+    _completers.register(T);
+
+    if (critical) _criticalServices.add(T);
   }
 
   Future<void> _waitForService<T extends Service<T>>() {
-    return Future.value();
-    /* final Completer<void>? completer = _completionTracker[T];
-
-    if (completer == null) {
+    try {
+      return _completers.waitForSingle(T);
+    } catch (e) {
       throw Exception(
         "Can't wait for Service $T because it was not registered",
       );
     }
-
-    return _completionTracker[T]!.future; */
   }
 
   Future<void> _startServices() async {
-    for (final MapEntry<Type, _ServiceBuilderWithFallback> awaiting
-        in _awaitingForStartup.entries) {
-      logger.info("Starting service ${awaiting.key}");
-      final Service<dynamic> service = await _startWithFallback(
-        awaiting.key,
-        awaiting.value.builder,
-        awaiting.value.fallback,
-      );
-      logger.info("Started service ${awaiting.key}");
-      _registeredServices[awaiting.key] = service;
+    for (final MapEntry(:key, :value) in _awaitingForStartup.entries) {
+      _startService(key, value);
     }
+
+    return _completers.waitForCompletion(_criticalServices);
+  }
+
+  Future<void> _startService(
+    Type type,
+    _ServiceBuilderWithFallback builderFn,
+  ) async {
+    logger.info("Starting service $type");
+
+    final (builder, fallback) = builderFn;
+    final Service<dynamic> service =
+        await _startWithFallback(type, builder, fallback);
+
+    logger.info("Started service $type");
+    _registeredServices[type] = service;
+    _completers.complete(type);
   }
 
   Future<void> _stopServices() async {
@@ -122,7 +140,6 @@ class ServiceManager with LoggerProvider {
       await service.start();
       service._running = true;
 
-      //_startupPool.completeComputation(type, service);
       return service;
     } catch (exception, stackTrace) {
       if (fallback == null) {
@@ -132,7 +149,6 @@ class ServiceManager with LoggerProvider {
           stackTrace,
         );
 
-        //_startupPool.completeComputation(type, FailedService._(type));
         return FailedService._(type);
       }
 
@@ -179,9 +195,7 @@ class ServiceNotRunningException<T extends Service<T>> implements Exception {
   }
 }
 
-class _ServiceBuilderWithFallback<T extends Service<T>> {
-  final ServiceBuilder<T> builder;
-  final T? fallback;
-
-  const _ServiceBuilderWithFallback(this.builder, this.fallback);
-}
+typedef _ServiceBuilderWithFallback<T extends Service<T>> = (
+  ServiceBuilder<T>,
+  T? fallback
+);

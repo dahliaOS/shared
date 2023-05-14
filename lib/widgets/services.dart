@@ -4,11 +4,24 @@ import 'package:dahlia_shared/services/service.dart';
 class ServiceEntry<T extends Service<T>> {
   final ServiceBuilder<T> builder;
   final T? fallback;
+  final bool critical;
 
-  const ServiceEntry(this.builder, [this.fallback]);
+  const ServiceEntry(
+    this.builder, [
+    this.fallback,
+  ]) : critical = false;
+
+  const ServiceEntry.critical(
+    this.builder, [
+    this.fallback,
+  ]) : critical = true;
 
   void register() {
-    ServiceManager.registerService<T>(builder, fallback: fallback);
+    ServiceManager.registerService<T>(
+      builder,
+      fallback: fallback,
+      critical: critical,
+    );
   }
 }
 
