@@ -1,7 +1,13 @@
 import 'dart:async';
 
 class CompleterGroup<T, R> {
-  late final Map<T, Completer<R>> _registeredCompleters = {};
+  final Map<T, Completer<R>> _registeredCompleters;
+
+  CompleterGroup([List<T> initialRegistrations = const []])
+      : _registeredCompleters = Map.fromIterables(
+          initialRegistrations,
+          List.generate(initialRegistrations.length, (index) => Completer<R>()),
+        );
 
   void register(T key) {
     _registeredCompleters[key] = Completer<R>();
@@ -21,13 +27,12 @@ class CompleterGroup<T, R> {
     return completer.future;
   }
 
-  Future<List<R>> waitForCompletion([List<T>? filter]) {
-    final Iterable<Completer<R>> completers =
-        filter != null && filter.isNotEmpty
-            ? _registeredCompleters.entries
-                .where((e) => filter.contains(e.key))
-                .map((e) => e.value)
-            : _registeredCompleters.values;
+  Future<List<R>> waitForCompletion([List<T> filter = const []]) {
+    final Iterable<Completer<R>> completers = filter.isNotEmpty
+        ? _registeredCompleters.entries
+            .where((e) => filter.contains(e.key))
+            .map((e) => e.value)
+        : _registeredCompleters.values;
 
     return Future.wait<R>(completers.map((e) => e.future));
   }
