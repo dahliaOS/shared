@@ -274,7 +274,7 @@ enum Preference<T> {
   launcherIcon<String>("launcher_icon", "icon:dahlia#launcher_1"),
   accentColor<String>("accent_color", "color:dahlia#orange"),
   fontFamily<String>("font_family", "Roboto"),
-  wallpaper<String>("wallpaper", "image:dahlia#images/wallpapers/modern.png"),
+  wallpaper<String>("wallpaper", "image:dahlia#images/wallpapers/lucerne.png"),
   compactLauncher<bool>("compact_launcher", false),
   volume<double>("volume", 0.5),
   muteVolume<bool>("mute_volume", false),
