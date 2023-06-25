@@ -14,25 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import 'package:flutter/material.dart';
 import 'package:dahlia_shared/services/customization.dart';
 import 'package:dahlia_shared/utils/resource.dart';
-
-extension ThemeDataX on ThemeData {
-  bool get darkMode => brightness == Brightness.dark;
-
-  Color get textColor => darkMode ? Colors.white : Colors.black;
-
-  Color get accent => colorScheme.secondary;
-  Color get backgroundColor => darkMode ? Colors.black : Colors.white;
-  Color get foregroundColor =>
-      accent.computeLuminance() > 0.4 ? Colors.black : Colors.white;
-  Color get surfaceForegroundColor =>
-      iconTheme.color ?? (darkMode ? Colors.white : Colors.black);
-
-  Color computedForegroundColor(Color init) =>
-      init.computeLuminance() > 0.4 ? Colors.black : Colors.white;
-}
+import 'package:flutter/material.dart';
 
 extension ColorsX on Color {
   Color op(double opacity) {
@@ -71,8 +55,7 @@ extension BuildContextX on BuildContext {
 
   NavigatorState get navigator => Navigator.of(this);
   void pop<T extends Object?>([T? result]) => navigator.pop<T?>(result);
-  Future<T?> push<T extends Object?>(Route<T> route) =>
-      navigator.push<T?>(route);
+  Future<T?> push<T extends Object?>(Route<T> route) => navigator.push<T?>(route);
 
   ScaffoldMessengerState get scaffoldMessenger => ScaffoldMessenger.of(this);
 
@@ -82,8 +65,7 @@ extension BuildContextX on BuildContext {
 }
 
 mixin ThemeConstants {
-  static EdgeInsets get buttonPadding =>
-      const EdgeInsets.symmetric(horizontal: 4, vertical: 10);
+  static EdgeInsets get buttonPadding => const EdgeInsets.symmetric(horizontal: 4, vertical: 10);
 }
 
 extension ResourcePointerUtils on String {
