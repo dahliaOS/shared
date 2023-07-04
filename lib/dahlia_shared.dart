@@ -12,6 +12,5 @@ export 'utils/constants.dart';
 export 'utils/extensions.dart';
 export 'utils/log.dart';
 export 'utils/resource.dart';
-export 'utils/theme.dart';
 
 export 'widgets/services.dart';
