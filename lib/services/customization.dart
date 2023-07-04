@@ -1,12 +1,11 @@
 import 'dart:async';
 
-import 'package:dsettings/dsettings.dart';
 import 'package:dahlia_shared/services/preferences.dart';
 import 'package:dahlia_shared/services/service.dart';
 import 'package:dahlia_shared/utils/resource.dart';
+import 'package:dsettings/dsettings.dart';
 
-abstract class CustomizationService
-    extends ListenableService<CustomizationService> {
+abstract class CustomizationService extends ListenableService<CustomizationService> {
   CustomizationService();
 
   static CustomizationService get current {
@@ -22,11 +21,8 @@ abstract class CustomizationService
   bool get enableEffects;
   List<String> get pinnedApps;
   List<ImageResource> get recentWallpapers;
-  IconResource get launcherIcon;
   ColorResource get accentColor;
-  String get fontFamily;
   ImageResource get wallpaper;
-  bool get compactLauncher;
   double get volume;
   bool get muteVolume;
   double get brightness;
@@ -42,11 +38,8 @@ abstract class CustomizationService
   set enableEffects(bool? value);
   set pinnedApps(List<String>? value);
   set recentWallpapers(List<ImageResource>? value);
-  set launcherIcon(IconResource value);
   set accentColor(ColorResource? value);
-  set fontFamily(String? value);
   set wallpaper(ImageResource? value);
-  set compactLauncher(bool? value);
   set volume(double? value);
   set muteVolume(bool? value);
   set brightness(double? value);
@@ -78,26 +71,13 @@ class _CustomizationServiceImpl extends CustomizationService {
   List<String> get pinnedApps => _get(Preference.pinnedApps);
 
   @override
-  List<ImageResource> get recentWallpapers =>
-      _getAsResourceList<ImageResource>(Preference.recentWallpapers);
+  List<ImageResource> get recentWallpapers => _getAsResourceList<ImageResource>(Preference.recentWallpapers);
 
   @override
-  IconResource get launcherIcon =>
-      _getAsResource<IconResource>(Preference.launcherIcon);
+  ColorResource get accentColor => _getAsResource<ColorResource>(Preference.accentColor);
 
   @override
-  ColorResource get accentColor =>
-      _getAsResource<ColorResource>(Preference.accentColor);
-
-  @override
-  String get fontFamily => _get(Preference.fontFamily);
-
-  @override
-  ImageResource get wallpaper =>
-      _getAsResource<ImageResource>(Preference.wallpaper);
-
-  @override
-  bool get compactLauncher => _get(Preference.compactLauncher);
+  ImageResource get wallpaper => _getAsResource<ImageResource>(Preference.wallpaper);
 
   @override
   double get volume => _get(Preference.volume);
@@ -131,8 +111,7 @@ class _CustomizationServiceImpl extends CustomizationService {
   set locale(String? value) => _set(Preference.locale, value);
 
   @override
-  set showWelcomeScreen(bool? value) =>
-      _set(Preference.showWelcomeScreen, value);
+  set showWelcomeScreen(bool? value) => _set(Preference.showWelcomeScreen, value);
 
   @override
   set enableEffects(bool? value) => _set(Preference.enableEffects, value);
@@ -147,22 +126,10 @@ class _CustomizationServiceImpl extends CustomizationService {
       );
 
   @override
-  set launcherIcon(IconResource? value) =>
-      _set(Preference.launcherIcon, value?.toString());
+  set accentColor(ColorResource? value) => _set(Preference.accentColor, value?.toString());
 
   @override
-  set accentColor(ColorResource? value) =>
-      _set(Preference.accentColor, value?.toString());
-
-  @override
-  set fontFamily(String? value) => _set(Preference.fontFamily, value);
-
-  @override
-  set wallpaper(ImageResource? value) =>
-      _set(Preference.wallpaper, value?.toString());
-
-  @override
-  set compactLauncher(bool? value) => _set(Preference.compactLauncher, value);
+  set wallpaper(ImageResource? value) => _set(Preference.wallpaper, value?.toString());
 
   @override
   set volume(double? value) => _set(Preference.volume, value);
@@ -183,12 +150,10 @@ class _CustomizationServiceImpl extends CustomizationService {
   set enableBluetooth(bool? value) => _set(Preference.enableBluetooth, value);
 
   @override
-  set enableAirplaneMode(bool? value) =>
-      _set(Preference.enableAirplaneMode, value);
+  set enableAirplaneMode(bool? value) => _set(Preference.enableAirplaneMode, value);
 
   @override
-  set recentSearchResults(List<String>? value) =>
-      _set(Preference.recentSearchResults, value);
+  set recentSearchResults(List<String>? value) => _set(Preference.recentSearchResults, value);
 
   @override
   Future<void> start() async {
@@ -196,8 +161,7 @@ class _CustomizationServiceImpl extends CustomizationService {
     await ServiceManager.waitForService<PreferencesService>();
     logger.info("Preference service is good to go");
 
-    final int? rawDatabaseVersion =
-        PreferencesService.current.get<int>(Preference.databaseVersion.key);
+    final int? rawDatabaseVersion = PreferencesService.current.get<int>(Preference.databaseVersion.key);
 
     if (rawDatabaseVersion == null || rawDatabaseVersion < 2) {
       PreferencesService.current.clear();
@@ -271,11 +235,8 @@ enum Preference<T> {
   enableEffects<bool>("enable_effects", true),
   pinnedApps<List<String>>("pinned_apps", []),
   recentWallpapers<List<String>>("recent_wallpapers", []),
-  launcherIcon<String>("launcher_icon", "icon:dahlia#launcher_1"),
   accentColor<String>("accent_color", "color:dahlia#orange"),
-  fontFamily<String>("font_family", "Roboto"),
-  wallpaper<String>("wallpaper", "image:dahlia#images/wallpapers/lucerne.png"),
-  compactLauncher<bool>("compact_launcher", false),
+  wallpaper<String>("wallpaper", "image:dahlia#images/wallpapers/modern.png"),
   volume<double>("volume", 0.5),
   muteVolume<bool>("mute_volume", false),
   brightness<double>("brightness", 0.5),
