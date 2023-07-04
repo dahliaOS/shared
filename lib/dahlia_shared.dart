@@ -4,6 +4,7 @@ export 'generated/locale.dart';
 
 export 'services/customization.dart';
 export 'services/locale.dart';
+export 'services/network_manager.dart';
 export 'services/preferences.dart';
 export 'services/service.dart';
 
