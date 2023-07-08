@@ -1,27 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:dahlia_shared/services/service.dart';
 
-class ServiceEntry<T extends Service<T>> {
-  final ServiceBuilder<T> builder;
-  final T? fallback;
+class ServiceEntry<T extends Service> {
+  final ServiceFactory<T> factory;
   final bool critical;
 
-  const ServiceEntry(
-    this.builder, [
-    this.fallback,
-  ]) : critical = false;
+  const ServiceEntry(this.factory) : critical = false;
 
-  const ServiceEntry.critical(
-    this.builder, [
-    this.fallback,
-  ]) : critical = true;
+  const ServiceEntry.critical(this.factory) : critical = true;
 
   void register() {
-    ServiceManager.registerService<T>(
-      builder,
-      fallback: fallback,
-      critical: critical,
-    );
+    ServiceManager.registerService<T>(factory, critical: critical);
   }
 }
 
@@ -74,7 +63,7 @@ class _ServiceBuilderWidgetState extends State<ServiceBuilderWidget> {
   }
 }
 
-class ListenableServiceBuilder<T extends ListenableService<T>>
+class ListenableServiceBuilder<T extends ListenableService>
     extends StatelessWidget {
   final TransitionBuilder builder;
   final Widget? child;
@@ -87,16 +76,15 @@ class ListenableServiceBuilder<T extends ListenableService<T>>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: ServiceManager.getService<T>()!,
+    return ListenableBuilder(
+      listenable: ServiceManager.getService<T>()!,
       builder: builder,
       child: child,
     );
   }
 }
 
-mixin StatelessServiceListener<S extends ListenableService<S>>
-    on StatelessWidget {
+mixin StatelessServiceListener<S extends ListenableService> on StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final S service = ServiceManager.getService<S>()!;
@@ -109,7 +97,7 @@ mixin StatelessServiceListener<S extends ListenableService<S>>
   Widget buildChild(BuildContext context, S service);
 }
 
-mixin StateServiceListener<S extends ListenableService<S>,
+mixin StateServiceListener<S extends ListenableService,
     T extends StatefulWidget> on State<T> {
   @override
   Widget build(BuildContext context) {

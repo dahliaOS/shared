@@ -7,14 +7,20 @@ import 'package:intl/locale.dart';
 import 'package:yatl_flutter/yatl_flutter.dart';
 import 'package:yatl_gen/yatl_gen.dart';
 
-abstract class LocaleService extends Service<LocaleService> {
+class LocaleServiceFactory extends ServiceFactory<LocaleService> {
+  const LocaleServiceFactory();
+
+  @override
+  LocaleService build() => _LocaleServiceImpl();
+}
+
+abstract class LocaleService extends Service {
   LocaleService();
 
   static LocaleService get current {
     return ServiceManager.getService<LocaleService>()!;
   }
 
-  static LocaleService build() => _LocaleServiceImpl();
   static const GeneratedLocales locales = GeneratedLocales();
 
   YatlCore get yatl;

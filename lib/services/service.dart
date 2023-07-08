@@ -4,23 +4,27 @@ import 'package:dahlia_shared/utils/completer_group.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dahlia_shared/utils/log.dart';
 
-abstract class Service<T extends Service<T>> with LoggerProvider {
+abstract class Service with LoggerProvider {
   bool _running = false;
   bool get running => _running;
+
+  void setRunning() {
+    if (_running) throw Exception("Service is already running");
+    _running = true;
+  }
 
   FutureOr<void> start();
   FutureOr<void> stop();
 
   @override
   String toString() {
-    return "$T, ${running ? "running" : "not running"}";
+    return "$runtimeType, ${running ? "running" : "not running"}";
   }
 }
 
-abstract class ListenableService<T extends ListenableService<T>>
-    extends Service<T> with ChangeNotifier {}
+abstract class ListenableService extends Service with ChangeNotifier {}
 
-class FailedService extends Service<FailedService> {
+class FailedService extends Service {
   final Type service;
 
   FailedService._(this.service);
@@ -43,52 +47,54 @@ class FailedService extends Service<FailedService> {
   }
 }
 
-typedef ServiceBuilder<T extends Service<T>> = FutureOr<T> Function();
+typedef ServiceBuilder<T extends Service> = T Function();
+typedef FallbackServiceBuilder<T extends Service> = T? Function();
+
+abstract class ServiceFactory<T extends Service> {
+  const ServiceFactory();
+
+  T build();
+  T? fallback() => null;
+}
 
 class ServiceManager with LoggerProvider {
-  final Map<Type, _ServiceBuilderWithFallback> _awaitingForStartup = {};
+  final Map<Type, ServiceFactory<Service>> _awaitingForStartup = {};
   final CompleterGroup<Type, void> _completers = CompleterGroup();
-  final Map<Type, Service<dynamic>> _registeredServices = {};
+  final Map<Type, Service> _registeredServices = {};
   final List<Type> _criticalServices = [];
   static final ServiceManager _instance = ServiceManager._();
 
   ServiceManager._();
 
-  static void registerService<T extends Service<T>>(
-    ServiceBuilder<T> builder, {
-    T? fallback,
+  static void registerService<T extends Service>(
+    ServiceFactory<T> factory, {
     bool critical = false,
   }) =>
-      _instance._registerService<T>(
-        builder,
-        fallback: fallback,
-        critical: critical,
-      );
+      _instance._registerService(factory, critical: critical);
 
   static Future<void> startServices() => _instance._startServices();
 
   static Future<void> stopServices() => _instance._stopServices();
 
-  static Future<void> waitForService<T extends Service<T>>() =>
+  static Future<void> waitForService<T extends Service>() =>
       _instance._waitForService<T>();
 
-  static Future<void> unregisterService<T extends Service<T>>() =>
+  static Future<void> unregisterService<T extends Service>() =>
       _instance._unregisterService<T>();
 
-  static T? getService<T extends Service<T>>() => _instance._getService<T>();
+  static T? getService<T extends Service>() => _instance._getService();
 
-  void _registerService<T extends Service<T>>(
-    ServiceBuilder<T> builder, {
-    T? fallback,
+  void _registerService<T extends Service>(
+    ServiceFactory<T> factory, {
     bool critical = false,
   }) {
-    _awaitingForStartup[T] = (builder, fallback);
+    _awaitingForStartup[T] = factory;
     _completers.register(T);
 
     if (critical) _criticalServices.add(T);
   }
 
-  Future<void> _waitForService<T extends Service<T>>() {
+  Future<void> _waitForService<T extends Service>() {
     try {
       return _completers.waitForSingle(T);
     } catch (e) {
@@ -108,13 +114,12 @@ class ServiceManager with LoggerProvider {
 
   Future<void> _startService(
     Type type,
-    _ServiceBuilderWithFallback builderFn,
+    ServiceFactory factory,
   ) async {
     logger.info("Starting service $type");
 
-    final (builder, fallback) = builderFn;
-    final Service<dynamic> service =
-        await _startWithFallback(type, builder, fallback);
+    final Service service =
+        await _startWithFallback(type, factory.build, factory.fallback);
 
     logger.info("Started service $type");
     _registeredServices[type] = service;
@@ -130,19 +135,20 @@ class ServiceManager with LoggerProvider {
     _registeredServices.clear();
   }
 
-  Future<Service<dynamic>> _startWithFallback(
+  Future<Service> _startWithFallback(
     Type type,
-    ServiceBuilder<Service<dynamic>> builder,
-    Service<dynamic>? fallback,
+    ServiceBuilder<Service> builder,
+    FallbackServiceBuilder<Service>? fallback,
   ) async {
     try {
-      final Service<dynamic> service = await builder();
+      final Service service = builder();
       await service.start();
-      service._running = true;
+      service.setRunning();
 
       return service;
     } catch (exception, stackTrace) {
-      if (fallback == null) {
+      final f = fallback?.call();
+      if (f == null) {
         logger.severe(
           "The service $type failed to start",
           exception,
@@ -159,21 +165,21 @@ class ServiceManager with LoggerProvider {
       );
       logger.info("Starting fallback service for $type");
 
-      return _startWithFallback(type, () => fallback, null);
+      return _startWithFallback(type, () => f, null);
     }
   }
 
-  Future<void> _unregisterService<T extends Service<T>>() =>
+  Future<void> _unregisterService<T extends Service>() =>
       _unregisterServiceByType(T);
 
   Future<void> _unregisterServiceByType(Type type) async {
-    final Service<dynamic>? service = _registeredServices.remove(type);
+    final Service? service = _registeredServices.remove(type);
     await service?.stop();
     service?._running = false;
   }
 
-  T? _getService<T extends Service<T>>() {
-    final Service<dynamic>? service = _registeredServices[T];
+  T? _getService<T extends Service>() {
+    final Service? service = _registeredServices[T];
 
     if (service == null) return null;
 
@@ -185,7 +191,7 @@ class ServiceManager with LoggerProvider {
   }
 }
 
-class ServiceNotRunningException<T extends Service<T>> implements Exception {
+class ServiceNotRunningException<T extends Service> implements Exception {
   const ServiceNotRunningException();
 
   @override
@@ -194,8 +200,3 @@ class ServiceNotRunningException<T extends Service<T>> implements Exception {
         'This is probably caused by an exception thrown while starting, consider adding a fallback service to avoid these situations.';
   }
 }
-
-typedef _ServiceBuilderWithFallback<T extends Service<T>> = (
-  ServiceBuilder<T>,
-  T? fallback
-);
