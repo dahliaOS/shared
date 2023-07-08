@@ -5,15 +5,19 @@ import 'package:dahlia_shared/services/preferences.dart';
 import 'package:dahlia_shared/services/service.dart';
 import 'package:dahlia_shared/utils/resource.dart';
 
-abstract class CustomizationService
-    extends ListenableService<CustomizationService> {
+class CustomizationServiceFactory extends ServiceFactory<CustomizationService> {
+  const CustomizationServiceFactory();
+
+  @override
+  CustomizationService build() => _CustomizationServiceImpl();
+}
+
+abstract class CustomizationService extends ListenableService {
   CustomizationService();
 
   static CustomizationService get current {
     return ServiceManager.getService<CustomizationService>()!;
   }
-
-  static CustomizationService build() => _CustomizationServiceImpl();
 
   int get databaseVersion;
   String get locale;
