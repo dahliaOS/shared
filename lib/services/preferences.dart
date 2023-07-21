@@ -6,21 +6,26 @@ import 'package:dsettings/dsettings.dart';
 import 'package:dahlia_shared/services/service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-abstract class PreferencesService
-    extends ListenableService<PreferencesService> {
-  PreferencesService();
+class PreferencesServiceFactory extends ServiceFactory<PreferencesService> {
+  const PreferencesServiceFactory();
 
-  static PreferencesService get current {
-    return ServiceManager.getService<PreferencesService>()!;
-  }
-
-  static PreferencesService build() {
+  @override
+  PreferencesService build() {
     if (Platform.isLinux) return _DSettingsPreferencesServiceImpl();
 
     return _SharedPrefPreferencesServiceImpl();
   }
 
-  factory PreferencesService.fallback() = _SharedPrefPreferencesServiceImpl;
+  @override
+  PreferencesService? fallback() => _SharedPrefPreferencesServiceImpl();
+}
+
+abstract class PreferencesService extends ListenableService {
+  PreferencesService();
+
+  static PreferencesService get current {
+    return ServiceManager.getService<PreferencesService>()!;
+  }
 
   T? get<T>(String key, [T? defaultValue]);
 
